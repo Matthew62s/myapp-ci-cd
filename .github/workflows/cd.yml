@@ -1,0 +1,45 @@
+name: Continuous Deployment
+
+on:
+  push:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup SSH connection
+      uses: webfactory/ssh-agent@v0.8.0
+      with:
+        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+    
+    - name: Deploy to Kubernetes
+      run: |
+        # Копируем манифесты на сервер
+        scp -o StrictHostKeyChecking=no -r k8s/manifests/* ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/tmp/k8s-manifests/
+        
+        # Выполняем деплой
+        ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
+          set -e
+          cd /tmp/k8s-manifests
+          
+          # Собираем новый образ
+          eval $(minikube docker-env)
+          docker build -t myapp:latest /home/devops/myapp-ci-cd/
+          
+          # Применяем манифесты
+          kubectl apply -f deployment.yaml -n devops-lab
+          kubectl apply -f service.yaml -n devops-lab
+          kubectl apply -f ingress.yaml -n devops-lab
+          
+          # Ждем обновления
+          kubectl rollout status deployment/myapp -n devops-lab --timeout=300s
+          
+          echo "🚀 Deployment completed successfully!"
+          echo "Application is available at: http://myapp.local"
+        EOF

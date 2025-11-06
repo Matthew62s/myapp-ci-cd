@@ -1,0 +1,6 @@
+kubectl
+minikube-linux-amd64
+__pycache__/
+*.pyc
+.env
+.DS_Store
