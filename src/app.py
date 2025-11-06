@@ -7,7 +7,7 @@ app = Flask(__name__)
 @app.route('/')
 def hello():
     return jsonify({
-        'message': 'Hello from GitHub Actions CI/CD!',
+        'message': 'Hello from DevOps Lab/Hello from DevOps Lab - CI-CD Pipeline v1.0',
         'version': os.getenv('VERSION', '1.0.0'),
         'environment': os.getenv('ENVIRONMENT', 'development'),
         'hostname': socket.gethostname(),
